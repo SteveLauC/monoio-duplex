@@ -1,0 +1,12 @@
+[package]
+name = "monoio-duplex"
+version = "0.1.0"
+edition = "2021"
+description = "Port of Tokio's SimplexStream and DuplexStream for Monoio"
+
+[dependencies]
+bytes = "1.7.2"
+monoio = "0.2.4"
+
+[dev-dependencies]
+futures = "0.3.31"
