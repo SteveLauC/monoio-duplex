@@ -1,0 +1,40 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+name: CI
+
+jobs:
+  check:
+    name: ${{ matrix.target_name }} (check, clippy)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target_name: Linux
+            os: ubuntu-latest
+          - target_name: macOS
+            os: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Rust toolchains
+        run: |
+          rustup toolchain install nightly --profile minimal --component rustfmt
+          rustup toolchain install stable --profile minimal --component clippy
+
+      - name: Run cargo fmt
+        env:
+          TERM: xterm-256color
+        run: |
+          cargo +nightly fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo clippy
+
+      - name: Run cargo test
+        run: cargo test 
