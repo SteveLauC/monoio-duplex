@@ -3,6 +3,7 @@ name = "monoio-duplex"
 version = "0.1.0"
 edition = "2021"
 description = "Port of Tokio's SimplexStream and DuplexStream for Monoio"
+repository = "https://github.com/SteveLauC/monoio-duplex"
 
 [dependencies]
 async-lock = "3.4.0"
