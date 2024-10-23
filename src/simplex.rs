@@ -347,6 +347,7 @@ impl<'stream, Buf: monoio::buf::IoBufMut> SimplexStreamReadFuture<'stream, Buf> 
     /// # SAFETY
     ///
     /// Know what you are doing before using this function.
+    #[allow(clippy::mut_from_ref)]
     unsafe fn stream_mut(&self) -> &mut SimplexStream {
         let raw_ptr = self.stream.get();
         *raw_ptr
@@ -357,6 +358,7 @@ impl<'stream, Buf: monoio::buf::IoBufMut> SimplexStreamReadFuture<'stream, Buf> 
     /// # SAFETY
     ///
     /// Know what you are doing before using this function.
+    #[allow(clippy::mut_from_ref)]
     unsafe fn buf_mut(&self) -> &mut Buf {
         let raw_ptr = self.buf.get();
         &mut *raw_ptr
@@ -408,6 +410,7 @@ impl<'stream, Buf: monoio::buf::IoVecBufMut> SimplexStreamReadvFuture<'stream, B
     /// # SAFETY
     ///
     /// Know what you are doing before using this function.
+    #[allow(clippy::mut_from_ref)]
     unsafe fn stream_mut(&self) -> &mut SimplexStream {
         let raw_ptr = self.stream.get();
         *raw_ptr
@@ -418,6 +421,7 @@ impl<'stream, Buf: monoio::buf::IoVecBufMut> SimplexStreamReadvFuture<'stream, B
     /// # SAFETY
     ///
     /// Know what you are doing before using this function.
+    #[allow(clippy::mut_from_ref)]
     unsafe fn buf_mut(&self) -> &mut Buf {
         let raw_ptr = self.buf.get();
         &mut *raw_ptr
@@ -482,6 +486,7 @@ impl<'stream, Buf: monoio::buf::IoBuf> SimplexStreamWriteFuture<'stream, Buf> {
     /// # SAFETY
     ///
     /// Know what you are doing before using this function.
+    #[allow(clippy::mut_from_ref)]
     unsafe fn stream_mut(&self) -> &mut SimplexStream {
         let raw_ptr = self.stream.get();
         *raw_ptr
@@ -529,6 +534,7 @@ impl<'stream, Buf: monoio::buf::IoVecBuf> SimplexStreamWritevFuture<'stream, Buf
     /// # SAFETY
     ///
     /// Know what you are doing before using this function.
+    #[allow(clippy::mut_from_ref)]
     unsafe fn stream_mut(&self) -> &mut SimplexStream {
         let raw_ptr = self.stream.get();
         *raw_ptr
