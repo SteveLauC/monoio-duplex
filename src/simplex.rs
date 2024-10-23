@@ -92,7 +92,7 @@ impl SimplexStream {
     }
 
     /// Closes and notifies the reader tasks.
-    fn close_write(&mut self) {
+    pub(crate) fn close_write(&mut self) {
         self.is_closed = true;
         // needs to notify any readers that no more data will come
         if let Some(waker) = self.read_waker.take() {
@@ -101,8 +101,7 @@ impl SimplexStream {
     }
 
     /// Closes and notifies the writer tasks.
-    #[allow(unused)] // TODO: remove this attribute once DuplexStream is implemented
-    fn close_read(&mut self) {
+    pub(crate) fn close_read(&mut self) {
         self.is_closed = true;
         // needs to notify any writers that they have to abort
         if let Some(waker) = self.write_waker.take() {
