@@ -123,6 +123,16 @@ impl AsyncWriteRent for DuplexStream {
     }
 }
 
+/// SAFETY:
+///
+/// > Users should ensure the read operations are indenpendence from the write
+/// > ones, the methods from AsyncReadRent and AsyncWriteRent can execute
+/// > concurrently.
+///
+/// For `DuplexStream`, read and write operate on different `SimplexStream`, so
+/// it is definitely safe to split it out.
+unsafe impl monoio::io::Split for DuplexStream {}
+
 #[cfg(test)]
 mod tests {
     use monoio::io::AsyncReadRentExt;
