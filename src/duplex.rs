@@ -255,7 +255,6 @@ mod tests {
             tx.send(()).unwrap();
             // this line should block
             let (_result, _buf) = client.write(vec![0_u8; 10]).await;
-            println!("outpu");
         });
 
         rx.await.unwrap();
