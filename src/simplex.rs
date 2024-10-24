@@ -594,13 +594,7 @@ unsafe impl monoio::io::Split for SimplexStream {}
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// Helper function to poll the future, and returns its current state.
-    fn poll_in_place<F: std::future::Future>(fut: Pin<&mut F>) -> Poll<F::Output> {
-        let waker = futures::task::noop_waker();
-        let mut cx = futures::task::Context::from_waker(&waker);
-        fut.poll(&mut cx)
-    }
+    use futures::FutureExt;
 
     #[monoio::test(enable_timer = true)]
     async fn basic_read_write() {
@@ -628,9 +622,9 @@ mod tests {
     #[monoio::test(enable_timer = true)]
     async fn read_empty_simplex() {
         let mut simplex = SimplexStream::new_unsplit(10);
-        let read_future = std::pin::pin!(simplex.read(Vec::new()));
-        let read_future_state = poll_in_place(read_future);
-        assert!(read_future_state.is_pending());
+        let read_future = simplex.read(Vec::new());
+        let read_future_state = read_future.now_or_never();
+        assert!(read_future_state.is_none());
     }
 
     #[monoio::test(enable_timer = true)]
@@ -641,7 +635,7 @@ mod tests {
         assert!(matches!(result, Ok(5)));
 
         let write_future = std::pin::pin!(simplex.write(b"more"));
-        let write_future_state = poll_in_place(write_future);
-        assert!(write_future_state.is_pending());
+        let write_future_state = write_future.now_or_never();
+        assert!(write_future_state.is_none());
     }
 }
