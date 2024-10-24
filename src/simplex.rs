@@ -676,4 +676,33 @@ mod tests {
         assert_eq!(buf[..1], [9]);
         assert_eq!(buf[1..], vec![0_u8; 9]);
     }
+
+    #[monoio::test(enable_timer = true)]
+    async fn read_wake_up_pending_write_task() {
+        use std::pin::pin;
+
+        let (mut read_half, mut write_half) = simplex(10);
+
+        // Make it full so that the next write future will be pending
+        let (write_result, _buf) = write_half.write(b"helloworld").await;
+        assert_eq!(write_result.unwrap(), 10);
+
+        let mut write_fut = pin!(write_half.write("nobug"));
+        assert!((&mut write_fut).now_or_never().is_none());
+
+        // After the read, string in SimplexStream: world
+        let (read_result, content) = read_half.read(vec![0_u8; 5]).await;
+        assert_eq!(read_result.unwrap(), 5);
+        assert_eq!(content, b"hello");
+
+        // After the write, string in SimplexStream: worldnobug
+        let (write_again_result, _str_nobug) = write_fut.await;
+        assert_eq!(write_again_result.unwrap(), 5);
+
+        // Read the string and verify it
+        let (read_result, buf) = read_half.read(vec![0_u8; 20]).await;
+        assert_eq!(read_result.unwrap(), 10);
+        assert_eq!(&buf[0..10], b"worldnobug");
+        assert_eq!(&buf[10..], vec![0_u8; 10]);
+    }
 }
