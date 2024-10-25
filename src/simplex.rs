@@ -632,10 +632,77 @@ mod tests {
         const MAX_BUF_SIZE: usize = 5;
         let mut simplex = SimplexStream::new_unsplit(MAX_BUF_SIZE);
         let (result, _) = simplex.write(vec![0_u8; MAX_BUF_SIZE]).await;
-        assert!(matches!(result, Ok(5)));
+        assert!(matches!(result, Ok(MAX_BUF_SIZE)));
 
         let write_future = std::pin::pin!(simplex.write(b"more"));
         let write_future_state = write_future.now_or_never();
         assert!(write_future_state.is_none());
+    }
+
+    #[monoio::test(enable_timer = true)]
+    async fn cannot_write_more_than_max_buf_size_bytes() {
+        const MAX_BUF_SIZE: usize = 5;
+        let mut simplex = SimplexStream::new_unsplit(MAX_BUF_SIZE);
+        let (result, _) = simplex.write("hello world!").await;
+        assert!(matches!(result, Ok(MAX_BUF_SIZE)));
+
+        let (result, content) = simplex.read(vec![0_u8; 10]).await;
+        assert_eq!(result.unwrap(), MAX_BUF_SIZE);
+        assert_eq!(&content[..MAX_BUF_SIZE], b"hello");
+        assert_eq!(&content[MAX_BUF_SIZE..], [0_u8; 5]);
+    }
+
+    #[monoio::test(enable_timer = true)]
+    async fn write_wake_up_pending_read_task() {
+        use std::pin::pin;
+
+        let (mut read_half, mut write_half) = simplex(10);
+
+        let mut read_fut = pin!(read_half.read(vec![0_u8; 10]));
+        assert!((&mut read_fut).now_or_never().is_none());
+
+        // This is unsafe as it can trigger re-allocation and invalidate the
+        // read curor (a raw pointer)
+        //
+        // https://github.com/SteveLauC/monoio-duplex/issues/10
+        //
+        // But looks like writing 1 byte is ok, so, to test this wakeup feature,
+        // let's risk!
+        let (write_result, _buf) = write_half.write(vec![9]).await;
+        assert_eq!(write_result.unwrap(), 1);
+
+        let (read_again_result, buf) = read_fut.await;
+        assert_eq!(read_again_result.unwrap(), 1);
+        assert_eq!(buf[..1], [9]);
+        assert_eq!(buf[1..], vec![0_u8; 9]);
+    }
+
+    #[monoio::test(enable_timer = true)]
+    async fn read_wake_up_pending_write_task() {
+        use std::pin::pin;
+
+        let (mut read_half, mut write_half) = simplex(10);
+
+        // Make it full so that the next write future will be pending
+        let (write_result, _buf) = write_half.write(b"helloworld").await;
+        assert_eq!(write_result.unwrap(), 10);
+
+        let mut write_fut = pin!(write_half.write("nobug"));
+        assert!((&mut write_fut).now_or_never().is_none());
+
+        // After the read, string in SimplexStream: world
+        let (read_result, content) = read_half.read(vec![0_u8; 5]).await;
+        assert_eq!(read_result.unwrap(), 5);
+        assert_eq!(content, b"hello");
+
+        // After the write, string in SimplexStream: worldnobug
+        let (write_again_result, _str_nobug) = write_fut.await;
+        assert_eq!(write_again_result.unwrap(), 5);
+
+        // Read the string and verify it
+        let (read_result, buf) = read_half.read(vec![0_u8; 20]).await;
+        assert_eq!(read_result.unwrap(), 10);
+        assert_eq!(&buf[0..10], b"worldnobug");
+        assert_eq!(&buf[10..], vec![0_u8; 10]);
     }
 }
